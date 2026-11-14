@@ -1,6 +1,6 @@
 # SFG Inter-Plant Transfer Tracker — Design Note
 
-**Prototype:** _[hosted link]_ · **Repo:** _[GitHub link]_ · Stack: Next.js (TypeScript) · Postgres (Neon) · Prisma · Vercel
+**Prototype:** https://sfg-transfer-tracker.vercel.app · **Repo:** https://github.com/AayushGupta56/sfg-transfer-tracker · Stack: Next.js (TypeScript) · Postgres (Neon) · Prisma · Vercel
 
 ## The problem in one line
 When a plant says "we never got it", there must be a record that answers who sent what, when, how many — and who counted what on arrival.
