@@ -5,8 +5,6 @@ Tracks semi-finished goods (SFGs) from the Headers and Sheet Metal departments a
 order (parent build) and a queue of SAP stock postings.
 
 - **Live prototype:** https://sfg-transfer-tracker.vercel.app
-- **Design note (1 page):** [NOTE.md](NOTE.md)
-- **Full project guide & decision log:** [PROJECT_GUIDE.md](PROJECT_GUIDE.md)
 
 ## 2-minute demo
 
