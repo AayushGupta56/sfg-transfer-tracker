@@ -1,0 +1,160 @@
+// SFG Inter-Plant Transfer Tracker — data model
+//
+// Field names deliberately mirror SAP concepts so a future SAP integration is a
+// mapping exercise, not a redesign:
+//   Plant.code      -> SAP WERKS (plant)
+//   Material.number -> SAP MATNR (material number)
+//   Material.unit   -> SAP MEINS (base unit of measure)
+//   Send / Receive  -> SAP two-step stock transfer, movement types 303 / 305
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled connection, used at runtime
+  directUrl = env("DIRECT_URL")   // direct connection, used for migrations
+}
+
+// ---------- Master data ----------
+
+model Plant {
+  code        String @id // e.g. "1100" (SAP WERKS)
+  name        String
+  description String
+
+  transfersOut Transfer[] @relation("FromPlant")
+  transfersIn  Transfer[] @relation("ToPlant")
+}
+
+model Material {
+  number      String @id // e.g. "HDR-1001" (SAP MATNR)
+  description String
+  department  String // "HEADERS" | "SHEET_METAL" — the two SFG-producing departments
+  unit        String @default("EA")
+
+  lines TransferLine[]
+}
+
+// ---------- Transactions ----------
+
+model Transfer {
+  id         Int     @id @default(autoincrement())
+  transferNo String? @unique // "TRF-000001" — printed on the transfer slip
+
+  fromPlantCode String
+  toPlantCode   String
+  fromPlant     Plant  @relation("FromPlant", fields: [fromPlantCode], references: [code])
+  toPlant       Plant  @relation("ToPlant", fields: [toPlantCode], references: [code])
+
+  // Link to the parent build in the (external) job order system
+  jobOrderNo String
+
+  status TransferStatus @default(IN_TRANSIT)
+
+  // Send (goods issue)
+  sentBy      String
+  sentAt      DateTime @default(now())
+  vehicleRef  String? // truck / trolley / driver reference
+  sendRemarks String?
+
+  // Receive (goods receipt)
+  receivedBy     String?
+  receivedAt     DateTime?
+  receiveRemarks String?
+
+  // Cancellation (only possible before receipt)
+  cancelledBy  String?
+  cancelledAt  DateTime?
+  cancelReason String?
+
+  // Discrepancy closure
+  resolvedBy     String?
+  resolvedAt     DateTime?
+  resolutionNote String?
+
+  // Protects against double-submits: the same form submission can never create two transfers
+  idempotencyKey String @unique
+
+  // References returned by SAP once the outbox has been synced (null until then)
+  sapGoodsIssueDoc   String?
+  sapGoodsReceiptDoc String?
+
+  lines  TransferLine[]
+  events TransferEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([toPlantCode, status])
+  @@index([fromPlantCode, status])
+  @@index([jobOrderNo])
+}
+
+enum TransferStatus {
+  IN_TRANSIT                // sent, not yet confirmed by receiving plant
+  RECEIVED                  // receiving plant counted exactly what was sent
+  RECEIVED_WITH_DISCREPANCY // counted quantity differs, or parts damaged / wrong
+  CANCELLED                 // sender withdrew it before it was received
+}
+
+model TransferLine {
+  id         Int      @id @default(autoincrement())
+  transferId Int
+  transfer   Transfer @relation(fields: [transferId], references: [id])
+
+  materialNumber String
+  material       Material @relation(fields: [materialNumber], references: [number])
+
+  qtySent     Int
+  qtyReceived Int? // null until receipt is confirmed
+
+  // Filled only when qtyReceived != qtySent or goods are not OK
+  discrepancyReason String? // SHORT | EXCESS | DAMAGED | WRONG_PART | OTHER
+  discrepancyNote   String?
+
+  @@unique([transferId, materialNumber])
+}
+
+// Append-only audit trail. A database trigger (see migration) blocks UPDATE and DELETE,
+// so not even the application itself can rewrite history.
+model TransferEvent {
+  id         Int      @id @default(autoincrement())
+  transferId Int
+  transfer   Transfer @relation(fields: [transferId], references: [id])
+
+  type      String // SENT | RECEIVED | RECEIVED_WITH_DISCREPANCY | CANCELLED | DISCREPANCY_RESOLVED | SAP_SYNCED
+  actor     String // person's name
+  plantCode String // plant the person was acting for
+  message   String // human-readable summary shown on the timeline
+  snapshot  Json // full state of the transfer + lines at that moment
+  createdAt DateTime @default(now())
+
+  @@index([transferId, createdAt])
+}
+
+// Transactional outbox: every business event that an external system (SAP, job order system)
+// must learn about is written here in the SAME transaction as the business change.
+// A background worker later delivers it. If SAP is down, nothing is lost — it just stays PENDING.
+model OutboxEvent {
+  id          Int          @id @default(autoincrement())
+  transferId  Int
+  eventType   String // SAP_GOODS_ISSUE_303 | SAP_GOODS_RECEIPT_305 | SAP_CANCEL_303
+  payload     Json // SAP-shaped body (MATNR, WERKS, BWART, MENGE, MEINS ...)
+  status      OutboxStatus @default(PENDING)
+  attempts    Int          @default(0)
+  lastError   String?
+  externalRef String? // e.g. SAP material document number
+  createdAt   DateTime     @default(now())
+  processedAt DateTime?
+
+  @@index([status, createdAt])
+}
+
+enum OutboxStatus {
+  PENDING
+  SENT
+  FAILED
+}

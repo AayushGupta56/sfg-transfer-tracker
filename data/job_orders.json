@@ -1,0 +1,60 @@
+{
+  "_comment": "DUMMY export of the existing Job Order System (tracks the parent build). The SFG tracker only READS this, through src/lib/jobOrders.ts. In production this file is replaced by an API call to the real job order system / SAP production orders.",
+  "source": "JobOrderSystem",
+  "exportedAt": "2026-11-14T06:00:00+04:00",
+  "jobOrders": [
+    {
+      "jobOrderNo": "JO-26-0101",
+      "product": { "number": "FG-AHU-5000", "description": "Air Handling Unit, 5,000 CFM" },
+      "quantity": 4,
+      "assemblyPlant": "1300",
+      "dueDate": "2026-11-21",
+      "status": "RELEASED",
+      "components": [
+        { "materialNumber": "HDR-1001", "qtyPerUnit": 2, "producedAt": "1100" },
+        { "materialNumber": "HDR-1002", "qtyPerUnit": 2, "producedAt": "1100" },
+        { "materialNumber": "SM-2001", "qtyPerUnit": 4, "producedAt": "1200" },
+        { "materialNumber": "SM-2002", "qtyPerUnit": 1, "producedAt": "1200" },
+        { "materialNumber": "SM-2003", "qtyPerUnit": 1, "producedAt": "1200" }
+      ]
+    },
+    {
+      "jobOrderNo": "JO-26-0102",
+      "product": { "number": "FG-AHU-3000", "description": "Air Handling Unit, 3,000 CFM" },
+      "quantity": 6,
+      "assemblyPlant": "1300",
+      "dueDate": "2026-11-28",
+      "status": "RELEASED",
+      "components": [
+        { "materialNumber": "HDR-1003", "qtyPerUnit": 2, "producedAt": "1100" },
+        { "materialNumber": "SM-2001", "qtyPerUnit": 2, "producedAt": "1200" },
+        { "materialNumber": "SM-2002", "qtyPerUnit": 1, "producedAt": "1200" },
+        { "materialNumber": "SM-2004", "qtyPerUnit": 1, "producedAt": "1200" }
+      ]
+    },
+    {
+      "jobOrderNo": "JO-26-0103",
+      "product": { "number": "FG-FCU-1200", "description": "Fan Coil Unit, 1,200 CFM" },
+      "quantity": 10,
+      "assemblyPlant": "1200",
+      "dueDate": "2026-11-25",
+      "status": "RELEASED",
+      "components": [
+        { "materialNumber": "HDR-1003", "qtyPerUnit": 1, "producedAt": "1100" },
+        { "materialNumber": "SM-2004", "qtyPerUnit": 1, "producedAt": "1200" }
+      ]
+    },
+    {
+      "jobOrderNo": "JO-26-0090",
+      "product": { "number": "FG-AHU-5000", "description": "Air Handling Unit, 5,000 CFM" },
+      "quantity": 2,
+      "assemblyPlant": "1300",
+      "dueDate": "2026-11-05",
+      "status": "CLOSED",
+      "components": [
+        { "materialNumber": "HDR-1001", "qtyPerUnit": 2, "producedAt": "1100" },
+        { "materialNumber": "SM-2001", "qtyPerUnit": 4, "producedAt": "1200" }
+      ]
+    }
+  ]
+}
